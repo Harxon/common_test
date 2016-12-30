@@ -1,0 +1,32 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+PRC_NUM	copy_use_multi_pthread.c	11;"	d	file:
+add_new_cpinfo_node	copy_use_multi_pthread.c	/^int add_new_cpinfo_node(linklistp_t hp, off_t start, off_t end, int thread_num){$/;"	f
+copy_info	copy_use_multi_pthread.c	/^typedef struct copy_info{$/;"	s	file:
+create_linklist_head	copy_use_multi_pthread.c	/^linklistp_t create_linklist_head(const char* src, const char* dts, off_t len, int thread_num){$/;"	f
+data	copy_use_multi_pthread.c	/^	void* data;$/;"	m	struct:copy_info	file:
+dts	copy_use_multi_pthread.c	/^	char* dts;$/;"	m	struct:copy_info	file:
+end	copy_use_multi_pthread.c	/^	off_t end;$/;"	m	struct:copy_info	file:
+fun	compare_a_b.c	/^int fun(char *s,char *d)$/;"	f
+len	copy_use_multi_pthread.c	/^	off_t len;$/;"	m	struct:copy_info	file:
+linklistp_t	copy_use_multi_pthread.c	/^}linknode_t,*linklistp_t;$/;"	t	typeref:struct:copy_info	file:
+linknode_t	copy_use_multi_pthread.c	/^}linknode_t,*linklistp_t;$/;"	t	typeref:struct:copy_info	file:
+list_dir	listdir.c	/^int list_dir(char* pathname){$/;"	f
+main	1.c	/^int main(int argc, const char *argv[])$/;"	f
+main	compare_a_b.c	/^int main(int argc, const char *argv[])$/;"	f
+main	copy.c_two_prc.c	/^int main(int argc, const char *argv[])$/;"	f
+main	copy_use_multi_pthread.c	/^int main(int argc, const char *argv[])$/;"	f
+main	fork.c	/^int main(int argc, const char *argv[])$/;"	f
+main	getchar.c	/^int main(int argc, const char *argv[])$/;"	f
+main	listdir.c	/^int main(int argc, const char *argv[])$/;"	f
+main	store.c	/^int main(int argc, const char *argv[])$/;"	f
+next	copy_use_multi_pthread.c	/^	struct copy_info* next;$/;"	m	struct:copy_info	typeref:struct:copy_info::copy_info	file:
+pthread_handler	copy_use_multi_pthread.c	/^void* pthread_handler(void* args){$/;"	f
+rm_multiple_slash	listdir.c	/^int rm_multiple_slash(char* s){$/;"	f
+src	copy_use_multi_pthread.c	/^	char* src;$/;"	m	struct:copy_info	file:
+start	copy_use_multi_pthread.c	/^	off_t start;$/;"	m	struct:copy_info	file:
+thread_num	copy_use_multi_pthread.c	/^	int thread_num;$/;"	m	struct:copy_info	file:
