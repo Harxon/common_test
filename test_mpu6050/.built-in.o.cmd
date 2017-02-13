@@ -1,0 +1,1 @@
+cmd_/home/linux/work/common_test/test_mpu6050/built-in.o :=  rm -f /home/linux/work/common_test/test_mpu6050/built-in.o; arm-none-linux-gnueabi-ar rcsD /home/linux/work/common_test/test_mpu6050/built-in.o

@@ -1,0 +1,1 @@
+cmd_/home/linux/work/common_test/test_mpu6050/mpu6050.ko := arm-none-linux-gnueabi-ld -EL -r  -T /home/linux/work/kernel/linux-3.14-fs4412/scripts/module-common.lds --build-id  -o /home/linux/work/common_test/test_mpu6050/mpu6050.ko /home/linux/work/common_test/test_mpu6050/mpu6050.o /home/linux/work/common_test/test_mpu6050/mpu6050.mod.o
