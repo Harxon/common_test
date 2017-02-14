@@ -24,6 +24,56 @@
 #include <video/samsung_fimd.h>
 
 #include "lcd.h"
+static void lcd_setup_gpio(void){
+	
+	;//
+}
+//platform data 
+static struct s3c_fb_pd_win  pd_win[S3C_FB_MAX_WIN] = {
+	[0] = {
+		.default_bpp = 0,
+		.max_bpp = 0,
+		.xres = 0,
+		.yres = 0,
+		.virtual_x = 0,
+		.virtual_y = 0,
+	},
+	[1] = {},
+	[2] = {},
+	[3] = {},
+	[4] = {},
+};
+static struct fb_videomode fb_vtiming = {
+		.name = "",
+		.refresh = 0,
+		.xres = 0,
+		.yres = 0,
+		.pixclock = 0,
+		.left_margin = 0,
+		.right_margin = 0,
+		.upper_margin = 0,
+		.lower_margin = 0,
+		.hsync_len = 0,
+		.vsync_len = 0,
+		.sync = 0,
+		.vmode = 0,
+		.flag = 0,
+};
+
+static struct s3c_fb_platdata pd[] = {
+	{
+		.setup_gpio = lcd_setup_gpio,
+		.win[0] = &pd_win[0],
+		.win[1] = &pd_win[1],
+		.win[2] = &pd_win[2],
+		.win[3] = &pd_win[3],
+		.win[4] = &pd_win[4],
+		.vtiming = &fb_vtiming,
+		.vidcon0 = 0,
+		.vidcon1 = 0,
+	},
+	{},
+};
 
 #define VALID_BPP124 (VALID_BPP(1) | VALID_BPP(2) | VALID_BPP(4))
 #define VALID_BPP1248 (VALID_BPP124 | VALID_BPP(8))
@@ -1275,7 +1325,7 @@ static int s3c_fb_probe(struct platform_device *pdev)
 //	const struct platform_device_id *platid;
 	struct s3c_fb_driverdata *fbdrv;
 	struct device *dev = &pdev->dev;
-	struct s3c_fb_platdata *pd;
+//	struct s3c_fb_platdata *pd;
 	struct s3c_fb *sfb;
 	struct resource *res;
 	int win;
@@ -1311,7 +1361,7 @@ static int s3c_fb_probe(struct platform_device *pdev)
 	dev_dbg(dev, "allocate new framebuffer %p\n", sfb);
 
 	sfb->dev = dev;
-	//sfb->pdata = pd;
+	sfb->pdata = pd;
 	sfb->variant = fbdrv->variant;
 
 	spin_lock_init(&sfb->slock);
