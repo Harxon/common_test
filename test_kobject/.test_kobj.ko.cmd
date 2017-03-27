@@ -1,0 +1,1 @@
+cmd_/home/linux/work/common_test/test_kobject/test_kobj.ko := ld -r -m elf_i386 -T /usr/src/linux-headers-3.2.0-29-generic-pae/scripts/module-common.lds --build-id  -o /home/linux/work/common_test/test_kobject/test_kobj.ko /home/linux/work/common_test/test_kobject/test_kobj.o /home/linux/work/common_test/test_kobject/test_kobj.mod.o
