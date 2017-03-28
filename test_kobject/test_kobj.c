@@ -6,7 +6,7 @@
 static struct kobject* kobjp = NULL;
 
 
-
+/*
 ssize_t	test_kobj_ops_show(struct kobject* kobj, struct attribute * attr , char* buf){
 
 	printk(KERN_EMERG "test_kobj_ops_show done!\n");
@@ -23,7 +23,7 @@ static struct sysfs_ops test_kobj_ops = {
 	.show = test_kobj_ops_show,
 	.store = test_kobj_ops_store,
 };
-
+*/
 void test_kobj_release(struct kobject* kobj){
 	
 	kobject_put(kobj);
@@ -36,13 +36,9 @@ static struct attribute attr = {
 		.name = "test_attr0",
 		.mode = S_IWUSR,
 };
-static struct attribute* attrp = &attr;
 
 static struct kobj_type ktype = {
 	.release = test_kobj_release,
-	.sysfs_ops = &test_kobj_ops,
-	.default_attrs = &attrp,
-	//struct attribute **default_attrs;
 };
 
 int test_kobj_init(void){
@@ -50,7 +46,9 @@ int test_kobj_init(void){
 	kobjp = kzalloc(sizeof(struct kobject), GFP_ATOMIC);
 	err = kobject_init_and_add(kobjp, &ktype, NULL, "test_kobj");
 	printk(KERN_INFO "kobject_init_and_add err: %d\n",err);
-	
+	sysfs_create_file(kobjp, &attr);
+
+
 	printk(KERN_EMERG "test_kobj_init success!\n");
 	printk(KERN_EMERG "kobjp->name:%s\n",kobjp->name);
 	return 0;
@@ -58,7 +56,7 @@ int test_kobj_init(void){
 
 void test_kobj_exit(void){
 
-	
+	sysfs_remove_file(kobjp, &attr);
 	kobject_put(kobjp);
 	kobject_del(kobjp);
 	kfree(kobjp);
