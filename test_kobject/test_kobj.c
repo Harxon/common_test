@@ -41,8 +41,18 @@ static struct kobj_type ktype = {
 	.release = test_kobj_release,
 };
 
+static struct kset test_kset = {
+	struct list_head list;
+	spinlock_t list_lock;
+	struct kobject kobj;
+	const struct kset_uevent_ops *uevent_ops;
+}
+
 int test_kobj_init(void){
 	int err = 0;
+
+	
+	err = kset_register(&test_kset);
 	kobjp = kzalloc(sizeof(struct kobject), GFP_ATOMIC);
 	err = kobject_init_and_add(kobjp, &ktype, NULL, "test_kobj");
 	printk(KERN_INFO "kobject_init_and_add err: %d\n",err);

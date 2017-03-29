@@ -22,7 +22,7 @@ struct SHM_MSG{
 
 void get_other_process_pid(int signum){
 
-	printf("signum: %d\n", signum);
+//	printf("signum: %d\n", signum);
 }
 
 void common_handler(int signum){
@@ -85,7 +85,7 @@ int main(int argc, const char *argv[])
 	kill(pid_o, SIGUSR1);
 
 	while(1){
-		puts("###");
+		printf("Please enter >> ");
 		read(0, buf, sizeof(buf));
 		memcpy(p->buf, buf, strlen(buf));
 		printf("p->buf: %s\n", p->buf);

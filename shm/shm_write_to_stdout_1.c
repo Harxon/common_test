@@ -21,7 +21,7 @@ struct SHM_MSG{
 
 void get_other_process_pid(int signum){
 
-	printf("signum: %d\n", signum);
+//	printf("signum: %d\n", signum);
 }
 void common_handler(int signum){
 	printf("%d is handling IPC_RMID\n...",signum);
@@ -77,10 +77,8 @@ int main(int argc, const char *argv[])
 	p->pid = getpid();
 	pause();
 	pid_o = p->pid;
-	printf("%d is linked to me(%d)\n",pid_o,getpid());
-
+	printf("%d is linked to me(%d).Below is its words.\n",pid_o,getpid());
 	while(1){
-		puts("###");
 		kill(pid_o, SIGUSR1);
 		pause();
 		memcpy(buf, p->buf, strlen(p->buf));
