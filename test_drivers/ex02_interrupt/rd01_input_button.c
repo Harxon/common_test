@@ -1,6 +1,9 @@
 #include <linux/input.h>
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/of.h>
+#include <linux/platform_device.h>
+#include <linux/interrupt.h>
 
 #include <asm/irq.h>
 #include <asm/io.h>
@@ -30,7 +33,7 @@ static irqreturn_t button_interrupt(int irq, void *dummy)
 	return IRQ_HANDLED;
 }
 
-static struct of_device_id id_table[] = {
+static const struct of_device_id ofdi[] = {
 	{
 		.compatible = "fs4412_key",
 	},
@@ -42,16 +45,20 @@ int key2_interrupt_probe(struct platform_device* pdevp){
 	struct resource* res = NULL;
 	res = platform_get_resource(pdevp, IORESOURCE_IRQ, 0);
 	if (request_irq(res->start, button_interrupt, 0, "button", NULL)) {
-        printk(KERN_ERR "button.c: Can't allocate irq %d\n", button_irq);
+        printk(KERN_ERR "button.c: Can't allocate irq %ud\n", res->start);
         return -EBUSY;
     }
+    
+	DEBUG("irqnum:%d\n", res->start);
 
 	HARXON_DEBUG();
 	return 0;
 }
 int key2_interrupt_remove(struct platform_device * pdevp){
+	struct resource* res = NULL;
+	res = platform_get_resource(pdevp, IORESOURCE_IRQ, 0);
 
-	free_irq(BUTTON_IRQ, button_interrupt);
+	free_irq(res->start, button_interrupt);
 	HARXON_DEBUG();
 	return 0;
 }
@@ -59,14 +66,14 @@ int key2_interrupt_remove(struct platform_device * pdevp){
 struct platform_driver pfd = {
 	.probe = key2_interrupt_probe,
 	.remove = key2_interrupt_remove,
-	.driver.id_table = of_match_ptr(id_table),
+	.driver.of_match_table = of_match_ptr(ofdi),
 };
 static int __init button_init(void)
 {
 	int error;
 
 	button_dev = input_allocate_device();
-	if (!button_dev) {
+	if(!button_dev){
 		printk(KERN_ERR "button.c: Not enough memory\n");
 		error = -ENOMEM;
 		return error;
@@ -97,3 +104,4 @@ static void __exit button_exit(void)
 
 module_init(button_init);
 module_exit(button_exit);
+MODULE_LICENSE("GPL");
