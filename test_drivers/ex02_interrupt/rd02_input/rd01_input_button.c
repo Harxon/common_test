@@ -1,6 +1,7 @@
-#include <linux/input.h>
 #include <linux/module.h>
 #include <linux/init.h>
+
+#include <linux/input.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
@@ -22,55 +23,65 @@
 
 
 static struct input_dev *button_dev;
-
+static int val = 0;
 
 
 static irqreturn_t button_interrupt(int irq, void *dummy)
 {
 	//input_report_key(button_dev, BTN_0, inb(BUTTON_PORT) & 1);	
-	input_report_key(button_dev, BTN_0, 1);
+	HARXON_DEBUG();
+	input_report_key(button_dev, BTN_0, val);
+	val = !val;
+	DEBUG("val:%d\n", val);
 	input_sync(button_dev);
 
 
 	DEBUG("irq:%d\n", irq);
-	HARXON_DEBUG();
 	return IRQ_HANDLED;
 }
 
-static const struct of_device_id ofdi[] = {
-	{
-		.compatible = "fs4412_key",
-	},
-	{},
-};
+
 
 int key2_interrupt_probe(struct platform_device* pdevp){
 
 	struct resource* res = NULL;
+	HARXON_DEBUG();
+	
 	res = platform_get_resource(pdevp, IORESOURCE_IRQ, 0);
-	if (request_irq(res->start, button_interrupt, 0, "button", NULL)) {
-        printk(KERN_ERR "button.c: Can't allocate irq %ud\n", res->start);
+	if (request_irq(res->start, button_interrupt, (res->flags & IRQF_TRIGGER_MASK ) | IRQF_SHARED, "k2", (void*)res)) {
+        printk(KERN_ERR "button.c: Can't allocate irq %u\n", res->start);
         return -EBUSY;
     }
     
 	DEBUG("irqnum:%d\n", res->start);
 
-	HARXON_DEBUG();
 	return 0;
 }
 int key2_interrupt_remove(struct platform_device * pdevp){
 	struct resource* res = NULL;
+	HARXON_DEBUG();
+	
 	res = platform_get_resource(pdevp, IORESOURCE_IRQ, 0);
 
-	free_irq(res->start, button_interrupt);
-	HARXON_DEBUG();
+	free_irq(res->start, (void*)res);
 	return 0;
 }
+
+static const struct of_device_id of_device_id_table[] = {
+	{
+		.compatible = "fs4412-key",
+	},
+	{},
+};
 
 struct platform_driver pfd = {
 	.probe = key2_interrupt_probe,
 	.remove = key2_interrupt_remove,
-	.driver.of_match_table = of_match_ptr(ofdi),
+	.driver = {
+		.owner = THIS_MODULE,
+		.name = "keyint_pfd",
+		.of_match_table = of_match_ptr(of_device_id_table),
+	}
 };
 
 static int __init button_init(void)
@@ -83,8 +94,13 @@ static int __init button_init(void)
 		error = -ENOMEM;
 		return error;
 	}
-
+	/* @evbit: bitmap of types of events supported by the device (EV_KEY,
+ 	 * EV_REL, etc.)
+	 */
 	button_dev->evbit[0] = BIT_MASK(EV_KEY);
+	/*
+	 * @keybit: bitmap of keys/buttons this device has
+ 	*/
 	button_dev->keybit[BIT_WORD(BTN_0)] = BIT_MASK(BTN_0);
 
 	error = input_register_device(button_dev);
