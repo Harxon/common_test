@@ -10,7 +10,7 @@
 
 #define __CDEV_DEBUG__
 #ifdef __CDEV_DEBUG__
-#define HARXON_DEBUG() printk(KERN_INFO "(%s/%s):%d\n",__FILE__, __func__, __LINE__)
+#define HARXON_DEBUG() printk(KERN_INFO "(%s):%d\n",__func__, __LINE__)
 
 #ifndef __HARXON__
 #define DEBUG(KERN_EMERG,arg...) printk(KERN_EMERG,##arg)
@@ -30,6 +30,10 @@ static irqreturn_t button_interrupt(int irq, void *dummy)
 	//input_report_key(button_dev, BTN_0, inb(BUTTON_PORT) & 1);	
 	input_report_key(button_dev, BTN_0, 1);
 	input_sync(button_dev);
+
+
+	DEBUG("irq:%d\n", irq);
+	HARXON_DEBUG();
 	return IRQ_HANDLED;
 }
 
@@ -68,6 +72,7 @@ struct platform_driver pfd = {
 	.remove = key2_interrupt_remove,
 	.driver.of_match_table = of_match_ptr(ofdi),
 };
+
 static int __init button_init(void)
 {
 	int error;
@@ -88,6 +93,8 @@ static int __init button_init(void)
 		goto err_free_dev;
 	}
 
+	platform_driver_register(&pfd);
+
 	HARXON_DEBUG();
 	return 0;
 
@@ -98,6 +105,7 @@ static int __init button_init(void)
 
 static void __exit button_exit(void)
 {
+	platform_driver_unregister(&pfd);
     input_unregister_device(button_dev);
 	HARXON_DEBUG();
 }
