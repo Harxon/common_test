@@ -23,6 +23,11 @@
 #define Debug(KERN_EMERG,arg...)
 #endif
 
+struct EXYNOS4412_LCDBLK_CFG{
+	unsigned long lcdblk_cfg;
+	unsigned long lcdblk_cfg2;
+};
+
 struct EXYNOS4412_GPIO{
 		unsigned long gpf0con;
 		unsigned long gpf0dat;
@@ -71,12 +76,74 @@ struct EXYNOS4412_LCD_REGISTER{
 		unsigned long wincon1;	/*窗口特性设置*/
 		unsigned long wincon2;	/*窗口特性设置*/
 		unsigned long wincon3;	/*窗口特性设置*/
+		
 		unsigned long wincon4;	/*窗口特性设置*/
+		unsigned long shadowcon;
+		unsigned long winchmap2;
+		unsigned long vidosd0a;
 		
-		unsigned long resv[28];
+		unsigned long vidosd0b;
+		unsigned long vidosd0c;
+		unsigned long vidosd1a;
+		unsigned long vidosd1b;
 		
+		unsigned long vidosd1c;
+		unsigned long vidosd2a;
+		unsigned long vidosd2b;
+		unsigned long vidosd2c;
+
+		
+		unsigned long vidosd3a;
+		unsigned long vidosd3b;
+		unsigned long vidosd3c;
+		unsigned long vidosd4a;
+		
+		unsigned long vidosd4b;
+		unsigned long vidosd4c;
 		unsigned long vindw00add0b0;	/*VIDWxxADDx: Specifies source image address setting.*/
+		unsigned long vindw00add0b1;
 		
+		unsigned long vindw00add0b2;
+		unsigned long vindw01add0b0;
+		unsigned long vindw01add0b1;
+		unsigned long vindw01add0b2;
+		
+		unsigned long vindw02add0b0;
+		unsigned long vindw02add0b1;
+		unsigned long vindw02add0b2;
+		unsigned long vindw03add0b0;
+
+		unsigned long vindw03add0b1;
+		unsigned long vindw03add0b2;
+		unsigned long vindw04add0b0;
+		unsigned long vindw04add0b1;
+		
+		unsigned long vindw04add0b2;
+		unsigned long vindw00add1b0;
+		unsigned long vindw00add1b1;
+		unsigned long vindw00add1b2;
+		
+		unsigned long vindw01add1b0;
+		unsigned long vindw01add1b1;
+		unsigned long vindw01add1b2;		
+		unsigned long vindw02add1b0;
+		
+		unsigned long vindw02add1b1;
+		unsigned long vindw02add1b2;
+		unsigned long vindw03add1b0;
+		unsigned long vindw03add1b1;
+		
+		unsigned long vindw03add1b2;
+		unsigned long vindw04add1b0;
+		unsigned long vindw04add1b1;		
+		unsigned long vindw04add1b2;
+
+		unsigned long vidw00add2;
+		unsigned long vidw01add2;
+		unsigned long vidw02add2;
+		unsigned long vidw03add2;
+		
+		unsigned long vidw04add2;
 		/*
 		//1. VIDCON0: Configures video output format and displays enable/disable.
 		//2. VIDCON1: Specifies RGB I/F control signal.
@@ -104,6 +171,9 @@ struct EXYNOS4412_LCD_REGISTER{
 		*/
 };
 
+static volatile struct EXYNOS4412_LCDBLK_CFG* lcdblk_cfg;
+static volatile void __iomem* clk_src_lcd0;
+static volatile void __iomem* clk_drv_lcd;
 static volatile struct EXYNOS4412_GPIO* fb_gpio;
 static volatile struct EXYNOS4412_LCD_REGISTER* fb_reg;
 
@@ -119,14 +189,16 @@ int exynos4412_fb_setcolreg(unsigned regno, unsigned red, unsigned green, unsign
 				return 0;
 }
 
+
 static struct fb_ops exynos4412_lcd_fops = {
 	.owner		= THIS_MODULE,
 		.fb_setcolreg	= exynos4412_fb_setcolreg,
 		/*
-		  .fb_fillrect	= cfb_fillrect,
-		  .fb_copyarea	= cfb_copyarea,
-		  .fb_imageblit	= cfb_imageblit,
-		  */
+		.fb_fillrect	= cfb_fillrect,
+		.fb_copyarea	= cfb_copyarea,
+		.fb_imageblit	= cfb_imageblit,
+		*/
+
 };
 
 static int exynos4412_lcd_init(void){
@@ -152,7 +224,7 @@ static int exynos4412_lcd_init(void){
 		harxon_debug();
 		
 		//2.2 可变参数
-		info->var.xres = 1024*(5+6+5)/8;			/* visible resolution		*/
+		info->var.xres = 1024;			/* visible resolution		*/
 		info->var.yres = 600;
 		info->var.xres_virtual = info->var.xres;		/* virtual resolution		*/
 		info->var.yres_virtual = info->var.yres;
@@ -180,6 +252,42 @@ static int exynos4412_lcd_init(void){
 		info->pseudo_palette = a_pseudo_palette;		/* Fake palette of 16 colors */ 
 		
 		//3.1 硬件操作:
+		/*显示控制寄存器，exynos手册12章节*/
+		/*
+		 *	LCDBLK_CFG = 0x1001_0000 + 0x0210
+		 * 	FIMDBYPASS_LBLK0	bit[1]	1 = FIMD Bypass
+		 *
+		 *	LCDBLK_CFG2 = 0x1001_0000 + 0x0214
+		 * MIE0_DISPON	bit[0]	 1 = PWM outpupt enable
+		 */
+		lcdblk_cfg = ioremap(0x10010000 + 0x0210, 8);
+		lcdblk_cfg->lcdblk_cfg |= (1<<1);
+		lcdblk_cfg->lcdblk_cfg2 |= (1<<0);
+		 
+		/*特殊寄存器SFR，设置LCD时钟, exynos4412手册7章节*/
+		/*
+		 *	CLK_SRC_LCD0 = 0x1003_0000 + 0xC234
+		 * FIMD0_SEL	bit[3:0]	0110 = SCLKMPLL_USER_T
+		 *	
+		 */
+		clk_src_lcd0 = ioremap(0x10030000 + 0xC234, 4);
+		*clk_src_lcd0 &= ~(0xf<<0);
+		*clk_src_lcd0 |= 6;
+		
+		/*
+		 *	CLK_DIV_LCD = 0x1003_0000 + 0xC534
+		 *
+		 * FIMD0_RATIO	bit[3:0]	0 = FIMD0_RATIO; SCLK_FIMD0 = MOUTFIMD0/(FIMD0_RATIO + 1)	
+		 */
+		clk_drv_lcd = ioremap(0x10030000 + 0xC534, 4);
+		*clk_drv_lcd &=  ~(0xf<<0);
+
+		/*
+		 * LCD的PWM使能输出 GPD0CON[1]	bit[7:4]	0x1 = Output
+0x2 = TOUT_1
+0x3 = LCD_PWM*/
+		 */
+		
 		/*	
 		 *	GPF0[0:3] LCD_HSYNC/ LCD_VSYNC/ LCD_DEN/ LCD_VOTCLK
 		 *	GPF0[4:7] LCD_VD[0:3]
@@ -201,11 +309,14 @@ static int exynos4412_lcd_init(void){
 		fb_gpio = ioremap(0x11400000 + 0x0180, sizeof(struct EXYNOS4412_GPIO));
 		Debug("sizeof(exynos4412_gpio_t):%d\n", sizeof(struct EXYNOS4412_LCD_REGISTER));
 		harxon_debug();
-		Debug("gpf0con:%p\n", fb_gpio->gpf0con);
-		writel(readl((void *)(fb_gpio->gpf0con)), 0x22222222);	/*参考exynos4412手册的GPIO，配置对应LCD管脚*/
-		writel(readl(fb_gpio->gpf1con), 0x22222222);
-		writel(readl(fb_gpio->gpf2con), 0x22222222);
-		writel(readl(fb_gpio->gpf3con), 0x00222222);
+		fb_gpio->gpf0con = 0x22222222;	/*参考exynos4412手册的GPIO，配置对应LCD管脚*/
+		harxon_debug();
+		fb_gpio->gpf1con = 0x22222222;
+		harxon_debug();
+		fb_gpio->gpf2con = 0x22222222;
+		harxon_debug();
+		fb_gpio->gpf3con = 0x00222222;
+		harxon_debug();
 		
 		fb_reg = ioremap(0x11C00000 + 0x0000, sizeof(struct EXYNOS4412_LCD_REGISTER));
 		harxon_debug();
@@ -220,7 +331,7 @@ static int exynos4412_lcd_init(void){
 		 *	ENVID  [1]	0 = Disables the video output and display control signal; 1 = Enables the video output and display control signal
 		 *	ENVID_F	[0]	0 = Disables the video output and display control signal； 1 = Enables the video output and display control signal
 		 */
-		writel(readl(fb_reg->vidcon0), ((1<<18)| (2<<16)) & ~(3<<0));
+		fb_reg->vidcon0 = ((1<<18)| (2<<16)) & ~(3<<0);
 		harxon_debug();
 		
 		/*
@@ -229,7 +340,7 @@ static int exynos4412_lcd_init(void){
 		 *	IHSYNC	bit[6]	1 = Inverted
 		 *	IVSYNC	bit[5]	1 = Inverted
 		 */
-		writel(readl(fb_reg->vidcon1), (1<<9)|(3<<5));
+		fb_reg->vidcon1 = (1<<9)|(3<<5);
 		harxon_debug();
 		
 		/*
@@ -240,19 +351,19 @@ static int exynos4412_lcd_init(void){
 		
 		/*
 		 * VIDTCON0 	配置视频输出时钟和决定显示尺寸
-		 * VBPD	bit[23:16]	32 =  垂直后肩 = 垂直同步信号结束到新的一帧数据开始传递需要多少行
+		 * VBPD	bit[23:16]	22 =  垂直后肩 = 垂直同步信号结束到新的一帧数据开始传递需要多少行
 		 * VFPD bit[15:8]	12 = 垂直前肩 = 一帧数据结束到垂直同步信号的开始需要多少行
 		 * VSPW	bit[7:0]	10 = 垂直同步脉冲宽度(行为单位)
 		 */
-		writel(readl(fb_reg->vidtcon0), (32<<16)|(12<<8)|(10<<0));
+		fb_reg->vidtcon0 = (22<<16)|(12<<8)|(10<<0);
 		harxon_debug();
 		/*
 		 * VIDTCON1 	配置视频输出时钟和决定显示尺寸
 		 * HBPD	bit[23:16]	160 = 水平后肩 = 垂直同步信号结束到新的一帧数据开始传递需要多少行
 		 * HFPD bit[15:8]	160 = 水平前肩 = 一帧数据结束到垂直同步信号的开始需要多少行
-		 * HSPW	bit[7:0]	70 = 水平同步脉冲宽度(VCLK为单位)
+		 * HSPW	bit[7:0]	10 = 水平同步脉冲宽度(VCLK为单位)
 		 */
-		writel(readl(fb_reg->vidtcon1), (160<<16)|(160<<8)|(70<<0));
+		fb_reg->vidtcon1 = (160<<16)|(160<<8)|(10<<0);
 		harxon_debug();
 		
 		/*
@@ -261,13 +372,13 @@ static int exynos4412_lcd_init(void){
 		 * LINEVAL  [21:11]	599  = lineval; VBPD + 1 < LINEVAL
 		 * HOZVAL	[10:0]	1023 = hozval
 		 */
-		writel(readl(fb_reg->vidtcon2), (599<<11)|(1023<<0));
+		fb_reg->vidtcon2 = (599<<11)|(1023<<0);
 		harxon_debug();
 		/* 
 		 * VIDTCON3	配置视频输出时钟和决定显示尺寸
 		 * VSYNCEN	bit[31]	1 = Enables
 		 */
-		writel(readl(fb_reg->vidtcon3), 1<<31);
+		fb_reg->vidtcon3 = 1<<31;
 		harxon_debug();
 		
 		/*
@@ -276,17 +387,17 @@ static int exynos4412_lcd_init(void){
 		 * BPPMODE_F	bit[5:2]	0101 = 16 BPP (non-palletized, R:5-G:6-B:5)
 		 * ENWIN_F	bit[0]	0 = Disables the video output and video control signal
 		 */
-		writel(readl(fb_reg->wincon0), (1<<22)|(5<<2)|(0<<0));
+		fb_reg->wincon0 = (1<<22)|(5<<2)|(0<<0);
 		harxon_debug();
 		
 		/*
 		 * VIDWxxADDx: Specifies source image address setting.
 		 */
-		writel(readl(fb_reg->vindw00add0b0), info->fix.smem_start);
+		fb_reg->vindw00add0b0 = info->fix.smem_start;
 		harxon_debug();
 		
 		/*3.2 开启LCD */
-		writel(readl(fb_reg->wincon0), (1<<22)|(5<<2)|(1<<0));
+		fb_reg->wincon0 = (1<<22)|(5<<2)|(1<<0);
 		harxon_debug();
 		
 		/*4. 注册LCD*/
