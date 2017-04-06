@@ -174,6 +174,8 @@ struct EXYNOS4412_LCD_REGISTER{
 static volatile struct EXYNOS4412_LCDBLK_CFG* lcdblk_cfg;
 static volatile void __iomem* clk_src_lcd0;
 static volatile void __iomem* clk_drv_lcd;
+static volatile void __iomem* gpd0_con;
+static volatile void __iomem* gpd0_dat;
 static volatile struct EXYNOS4412_GPIO* fb_gpio;
 static volatile struct EXYNOS4412_LCD_REGISTER* fb_reg;
 
@@ -220,7 +222,7 @@ static int exynos4412_lcd_init(void){
 		info->fix.smem_len = 1024*(5+6+5)*600/8;			/*参考LCD手册 Length of frame buffer mem */
 		info->fix.visual = FB_VISUAL_TRUECOLOR;			/*TFT屏是真彩色 see FB_VISUAL_*		*/ 
 		info->fix.line_length = 1024*16/8;		/* length of a line in bytes    */
-		
+	
 		harxon_debug();
 		
 		//2.2 可变参数
@@ -241,10 +243,6 @@ static int exynos4412_lcd_init(void){
 		
 		info->fbops = &exynos4412_lcd_fops;
 		//	char __iomem *screen_base;	/* Virtual address */
-		
-		harxon_debug();
-		
-		info->screen_base = dma_alloc_writecombine(NULL, info->fix.smem_len, (dma_addr_t*)(&(info->fix.smem_start)), GFP_KERNEL);
 		
 		harxon_debug();
 		
@@ -271,22 +269,30 @@ static int exynos4412_lcd_init(void){
 		 *	
 		 */
 		clk_src_lcd0 = ioremap(0x10030000 + 0xC234, 4);
-		*clk_src_lcd0 &= ~(0xf<<0);
-		*clk_src_lcd0 |= 6;
+		writel(readl(clk_src_lcd0) & ~(0xf<<0), clk_src_lcd0);
+		writel(readl(clk_src_lcd0) | (0x6<<0), clk_src_lcd0);
 		
 		/*
 		 *	CLK_DIV_LCD = 0x1003_0000 + 0xC534
 		 *
 		 * FIMD0_RATIO	bit[3:0]	0 = FIMD0_RATIO; SCLK_FIMD0 = MOUTFIMD0/(FIMD0_RATIO + 1)	
+		 * 
 		 */
 		clk_drv_lcd = ioremap(0x10030000 + 0xC534, 4);
-		*clk_drv_lcd &=  ~(0xf<<0);
+		writel(readl(clk_drv_lcd) & ~(0xf<<0), clk_drv_lcd);
 
 		/*
-		 * LCD的PWM使能输出 GPD0CON[1]	bit[7:4]	0x1 = Output
-0x2 = TOUT_1
-0x3 = LCD_PWM*/
+		 * LCD的PWM使能输出 
+		 * GPD0CON = 0x1140_0000 + 0x00A0
+		 * 		bit[7:4]	0x1 = Output； 0x3 = LCD_PWM
+		 * 	
+		 * GPD0DAT = 0x1140_0000 + 0x00A4
+		 *		bit[1] 0x1 = When configuring as output port then pin state should be same as
+		 * corresponding bit. 
 		 */
+		 gpd0_con = ioremap(0x11400000 + 0x00A0, 8);
+		 gpd0_dat = gpd0_con + 1;
+		 writel((readl(gpd0_con) & ~(0xf<<4)) | (1<<4), gpd0_con);
 		
 		/*	
 		 *	GPF0[0:3] LCD_HSYNC/ LCD_VSYNC/ LCD_DEN/ LCD_VOTCLK
@@ -326,12 +332,12 @@ static int exynos4412_lcd_init(void){
 		 *	RGSPSEL	bit[18]	0 = RGB parallel format; 1 = RGB serial format
 		 * PNRMODE	bit[17]	0 = Normal: RGBORDER[2] atVIDCON3; 1 = Invert: to RGBORDER[2] atVIDCON3
 		 *	CLKVAL_F	bit[13:6] VCLK = FIMD * SCLK/(CLKVAL+1), where CLKVAL>=1(VCLK <= 80MHZ)
-		 *						 		(160/51.2 - 1)
+		 *						 		(160/10 - 1)
 		 *	VCLKFREE	bit[5]	1 = Free-run mode
 		 *	ENVID  [1]	0 = Disables the video output and display control signal; 1 = Enables the video output and display control signal
 		 *	ENVID_F	[0]	0 = Disables the video output and display control signal； 1 = Enables the video output and display control signal
 		 */
-		fb_reg->vidcon0 = ((1<<18)| (2<<16)) & ~(3<<0);
+		fb_reg->vidcon0 = ((1<<18)| (15<<16)) & ~(3<<0);
 		harxon_debug();
 		
 		/*
@@ -374,30 +380,60 @@ static int exynos4412_lcd_init(void){
 		 */
 		fb_reg->vidtcon2 = (599<<11)|(1023<<0);
 		harxon_debug();
-		/* 
-		 * VIDTCON3	配置视频输出时钟和决定显示尺寸
-		 * VSYNCEN	bit[31]	1 = Enables
-		 */
-		fb_reg->vidtcon3 = 1<<31;
-		harxon_debug();
 		
 		/*
 		 * WINCON0 窗口特性配置
-		 * ENLOCAL_F	bit[22]	选择串口数据来源	1 = Local Path
+		 * ENLOCAL_F	bit[16]	半字转换
 		 * BPPMODE_F	bit[5:2]	0101 = 16 BPP (non-palletized, R:5-G:6-B:5)
 		 * ENWIN_F	bit[0]	0 = Disables the video output and video control signal
 		 */
-		fb_reg->wincon0 = (1<<22)|(5<<2)|(0<<0);
+		fb_reg->wincon0 = (1<<16)|(5<<2)|(0<<0);
 		harxon_debug();
+
+		/*
+		 * SHADOWCON 图层通道的使能
+		 * C0_EN_F  bit[0]	Enables Channel 0; 1 = Enables
+		 */
+		fb_reg->shadowcon = (1<<0);
+		 
 		
+		/*	设置屏幕坐标和尺寸
+		 *	VIDOSD0A
+		 *	OSD_LeftTopX_F  [21:11]	Specifies the horizontal screen coordinate for left top pixel of OSD image.
+		 *	OSD_LeftTopY_F  [10:0]	Specifies the vertical screen coordinate for left top pixel of OSD image.
+		 *
+		 *	VIDOSD0C
+		 *	OSDSIZE  [23:0]	Specifies the Window Size For example, Height*Width (number of word)
+		 */
+		 fb_reg->vidosd0a = (1023<<11)|(599<<0);
+		 fb_reg->vidosd0c = (1024*600);
 		/*
 		 * VIDWxxADDx: Specifies source image address setting.
-		 */
+		 *	
+		 *VBASEU_F	[31:0]	Specifies A[31:0] of the start address for video frame buffer
+		 *VBASEL_F	[31:0]	Specifies A[31:0] of the end address for video frame buffer.
+		 *VBASEL = VBASEU + (PAGEWIDTH + OFFSIZE)*(LINEVAL + 1)
+		 *PAGEWIDTH_F  [12:0]	Specifies virtual screen page width (number of byte).
+		 */	 
 		fb_reg->vindw00add0b0 = info->fix.smem_start;
-		harxon_debug();
+		fb_reg->vindw00add1b0 = info->fix.smem_start + info->fix.smem_len;
+		fb_reg->vidw00add2 = info->fix.line_length;
+
+
+		/*3.2 申请虚拟DMA显存，传递信息给LCD控制器*/
 		
-		/*3.2 开启LCD */
-		fb_reg->wincon0 = (1<<22)|(5<<2)|(1<<0);
+		info->screen_base = dma_alloc_writecombine(NULL, info->fix.smem_len, (dma_addr_t*)(&(info->fix.smem_start)), GFP_KERNEL);
+
+
+		 
+		/*3.3 开启LCD */
+		fb_reg->wincon0 |= (1<<0);
+		//Enables the video output and display control signal
+		fb_reg->vidcon0 |= (3<<0);
+		
+		writel(readl(gpd0_dat) | (1<<1), gpd0_dat);
+		
+		
 		harxon_debug();
 		
 		/*4. 注册LCD*/
@@ -411,10 +447,15 @@ static void exynos4412_lcd_exit(void){
 		harxon_debug();	
 		
 		unregister_framebuffer(info);
-		iounmap(fb_reg);
-		iounmap(fb_gpio);
 		
 		dma_free_writecombine(NULL, info->fix.smem_len, &info->screen_base, info->fix.smem_start);
+		
+		iounmap(fb_reg);
+		iounmap(fb_gpio);
+		iounmap(gpd0_con);
+		iounmap(clk_drv_lcd);
+		iounmap(clk_src_lcd0);
+		iounmap(lcdblk_cfg);
 		
 		framebuffer_release(info);
 		
