@@ -13,38 +13,30 @@
 int main(int argc, const char *argv[])
 {
 	int fd_mem = -1;
-	int ret = -1;
 	unsigned long gpx2con_phy_addr = 0;
 	unsigned long* vaddr_base = NULL;
 	unsigned long* gpx2con_vaddr = NULL;
 	unsigned long* gpx2dat_vaddr = NULL;
-	unsigned long regcon_data;
-	unsigned long regdat_data;
 
-	if(argc<4){
-		printf("Please input: %s + address + condata + datdata");
-		return -1;
-	}
+	gpx2con_phy_addr = strtoul("0x11000c44", 0, 0);
 
-	gpx2con_phy_addr = strtoul(argv[1], 0, 0);
-	regcon_data = strtoul(argv[2], 0, 0);
-	regdat_data = strtoul(argv[3], 0, 0);
 	fd_mem = open("/dev/mem", O_RDWR | O_SYNC);
 	{
 		Debug();
-		vaddr_base = mmap(0, 4096, PROT_READ|PROT_WRITE,  MAP_SHARED, fd_mem, gpx2con_phy_addr & ~(4096-1));
-		gpx2con_vaddr = vaddr_base + (gpx2con_phy_addr & (4096 -1));
+		vaddr_base = mmap(0, 4096UL, PROT_READ|PROT_WRITE,  MAP_SHARED, fd_mem, gpx2con_phy_addr & ~(4096UL - 1));
+		gpx2con_vaddr = vaddr_base + (gpx2con_phy_addr & (4096UL -1));
+		*gpx2con_vaddr = (1<<7);
+		printf("%lp:%#x\n", gpx2con_vaddr, *gpx2con_vaddr);
+#if 0
 		gpx2dat_vaddr = gpx2con_vaddr + 1;
-		Debug();
-		printf("%lp\n", gpx2con_vaddr);
-		printf("%p\n", gpx2con_vaddr+1);
-		Debug();
-		*gpx2con_vaddr |= regcon_data;
-		Debug();
-		*gpx2dat_vaddr |= regdat_data; 
+		printf("%p:%#x\n", gpx2dat_vaddr, *gpx2dat_vaddr);
+		*gpx2dat_vaddr = (0<<7); 
+		sleep(1);
+		*gpx2dat_vaddr = (1<<7); 
+#endif
 	}
 	Debug();
-	munmap(gpx2con_vaddr, 4096);
+	munmap(gpx2con_vaddr, 8);
 
 	getchar();
 	return 0;
