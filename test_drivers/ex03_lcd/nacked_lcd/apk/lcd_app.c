@@ -10,12 +10,17 @@
 
 int main(int argc, const char *argv[])
 {
-	int err = -1;
-	int fd_fb = open(PATHNAME, O_RDWR);
-	while(err){
-		err = write(fd_fb, gImage_lcd_picture, strlen(gImage_lcd_picture));
+	int cnt = -1;
+	//char buffer[1024*600*2] = {};
+	const unsigned char* p = gImage_lcd_picture;
+
+	int fd = open(PATHNAME, O_RDWR);
+	while(cnt){
+		cnt = write(fd, p, strlen(p));
+		printf("cnt_write:%d\n", cnt);
+		p += cnt;
 	}
 
-	close(fd_fb);
+	close(fd);
 	return 0;
 }
