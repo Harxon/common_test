@@ -1,0 +1,42 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+BITMAPFILEHEADER	write_framebuffer_image.c	/^}__attribute__((packed)) BITMAPFILEHEADER;  $/;"	t	typeref:struct:__anon1	file:
+BITMAPINFOHEADER	write_framebuffer_image.c	/^}__attribute__((packed)) BITMAPINFOHEADER;  $/;"	t	typeref:struct:__anon2	file:
+CC	Makefile	/^CC = arm-none-linux-gnueabi-gcc$/;"	m
+CC	Makefile	/^CC = gcc$/;"	m
+Debug	mmap_framebuffer.c	13;"	d	file:
+FileHead	write_framebuffer_image.c	/^BITMAPFILEHEADER FileHead;  $/;"	v
+InfoHead	write_framebuffer_image.c	/^BITMAPINFOHEADER InfoHead;  $/;"	v
+MMAP_LENGTH	mmap_framebuffer.c	12;"	d	file:
+PIXEL	write_framebuffer_image.c	/^}__attribute__((packed)) PIXEL;\/\/颜色模式RGB  $/;"	t	typeref:struct:__anon3	file:
+bits_per_pixel	write_framebuffer_image.c	/^static int bits_per_pixel = 0;  $/;"	v	file:
+blue	write_framebuffer_image.c	/^	unsigned short blue;  $/;"	m	struct:__anon3	file:
+cfReserved	write_framebuffer_image.c	/^	long cfReserved;\/\/保留，值为0  $/;"	m	struct:__anon1	file:
+cfSize	write_framebuffer_image.c	/^	long cfSize;\/\/文件大小（字节）  $/;"	m	struct:__anon1	file:
+cfType	write_framebuffer_image.c	/^	char cfType[2];\/\/文件类型，"BM"(0x4D42)  $/;"	m	struct:__anon1	file:
+cfoffBits	write_framebuffer_image.c	/^	long cfoffBits;\/\/数据区相对于文件头的偏移量（字节）  $/;"	m	struct:__anon1	file:
+ciBitCount	write_framebuffer_image.c	/^	int ciBitCount;\/\/每个像素的位数  $/;"	m	struct:__anon2	file:
+ciClrImportant	write_framebuffer_image.c	/^	char ciClrImportant[4]; \/\/指定重要的颜色数，当该域的值等于颜色数时（或者等于0时），表示所有颜色都一样重要  $/;"	m	struct:__anon2	file:
+ciClrUsed	write_framebuffer_image.c	/^	char ciClrUsed[4]; \/\/位图使用调色板的颜色数  $/;"	m	struct:__anon2	file:
+ciCompress	write_framebuffer_image.c	/^	char ciCompress[4];\/\/压缩说明  $/;"	m	struct:__anon2	file:
+ciHeight	write_framebuffer_image.c	/^	long ciHeight;\/\/高度  $/;"	m	struct:__anon2	file:
+ciPlanes	write_framebuffer_image.c	/^	char ciPlanes[2];\/\/目标设备的位平面数，值为1  $/;"	m	struct:__anon2	file:
+ciSize	write_framebuffer_image.c	/^	char ciSize[4];\/\/BITMAPFILEHEADER所占的字节数  $/;"	m	struct:__anon2	file:
+ciSizeImage	write_framebuffer_image.c	/^	char ciSizeImage[4];\/\/用字节表示的图像大小，该数据必须是4的倍数  $/;"	m	struct:__anon2	file:
+ciWidth	write_framebuffer_image.c	/^	long ciWidth;\/\/宽度  $/;"	m	struct:__anon2	file:
+ciXPelsPerMeter	write_framebuffer_image.c	/^	char ciXPelsPerMeter[4];\/\/目标设备的水平像素数\/米  $/;"	m	struct:__anon2	file:
+ciYPelsPerMeter	write_framebuffer_image.c	/^	char ciYPelsPerMeter[4];\/\/目标设备的垂直像素数\/米  $/;"	m	struct:__anon2	file:
+fbp	write_framebuffer_image.c	/^static char *fbp = 0;  $/;"	v	file:
+gImage_lcd_picture	lcd_picture.h	/^const unsigned char gImage_lcd_picture[1136400] = { \/* 0X00,0X10,0XB3,0X03,0X58,0X02,0X01,0X1B, *\/$/;"	v
+green	write_framebuffer_image.c	/^	unsigned short green;  $/;"	m	struct:__anon3	file:
+main	mmap_framebuffer.c	/^int main(int argc, const char *argv[])$/;"	f
+main	write_framebuffer_image.c	/^int main ( int argc, char *argv[] )  $/;"	f
+red	write_framebuffer_image.c	/^	unsigned short red;  $/;"	m	struct:__anon3	file:
+reserved	write_framebuffer_image.c	/^	unsigned short reserved;  $/;"	m	struct:__anon3	file:
+show_bmp	write_framebuffer_image.c	/^int show_bmp()  $/;"	f
+xres	write_framebuffer_image.c	/^static int xres = 0;  $/;"	v	file:
+yres	write_framebuffer_image.c	/^static int yres = 0;  $/;"	v	file:
