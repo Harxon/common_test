@@ -6,6 +6,7 @@
 #include <linux/miscdevice.h>
 #include <linux/slab.h>
 
+#include <asm/uaccess.h>
 #include <asm/string.h>
 #include "mpu6050_ioctl.h"
 #define SMPLRT_DIV		0x19
@@ -29,37 +30,36 @@
 #define PWR_MGMT_1		0x6B
 
 
-
 #define Debug() printk(KERN_INFO "(%s):%d\n", __func__, __LINE__)
+#define Debug_printk(arg, ...) printk(KERN_INFO "(%s):%d;"##arg, __func__, __LINE__)
 #define Debug_err() printk(KERN_ERR"ERR!!!:(%s):%d\n", __func__, __LINE__)
 static struct miscdevice * misc = NULL;
-static struct i2c_client* client = NULL;
+static struct i2c_client* global_client = NULL;
+static mpu6050_msg_t data;
 
 
+static unsigned char read_reg_mpu6050(struct i2c_client* client, unsigned char reg){
 
-static __u8 read_reg_mpu6050(struct i2c_client* client, __u8 reg){
+	unsigned char rxbuf = '\0';
 
-	__u8* rxbuf = NULL;
 	struct i2c_msg msg[2] = {
-		{client->addr, 0, sizeof(__u8), &reg},
-		{client->addr, 1, sizeof(__u8), rxbuf},
+		{client->addr, 0, 1, &reg},
+		{client->addr, 1, 1, &rxbuf},
 	};
-	Debug();
 
 	if(0 > i2c_transfer(client->adapter, msg, ARRAY_SIZE(msg))){
 		Debug_err();
 		return -ENOMSG;
 	}else{}
 	
-	return *rxbuf;
+	return rxbuf;
 }
-static __u8 write_reg_mpu6050(struct i2c_client* client, __u8 reg, __u8 val){
+static unsigned char write_reg_mpu6050(struct i2c_client* client, unsigned char reg, unsigned char val){
 		
 	struct i2c_msg msg[2] = {
-		{client->addr, 0, sizeof(__u8), &reg},
-		{client->addr, 0, sizeof(__u8), &val},
+		{client->addr, 0, 1, &reg},
+		{client->addr, 0, 1, &val},
 	};
-	Debug();
 
 	if(0 > i2c_transfer(client->adapter, msg, ARRAY_SIZE(msg))){
 		Debug_err();
@@ -70,44 +70,68 @@ static __u8 write_reg_mpu6050(struct i2c_client* client, __u8 reg, __u8 val){
 }
 
 static int mpu6050_init(struct i2c_client* clientp){
-	Debug();
+	Debug_printk("Enter mpu6050_init\n");
 	write_reg_mpu6050(clientp, PWR_MGMT_1, 0x00);
 	write_reg_mpu6050(clientp, SMPLRT_DIV, 0x07);
 	write_reg_mpu6050(clientp, CONFIG, 0x06);
 	write_reg_mpu6050(clientp, GYRO_CONFIG, 0xF8);
 	write_reg_mpu6050(clientp, ACCEL_CONFIG, 0x19);
 
+	Debug_printk("mpu6050_init Done!\n");
 	return 0;
 }
 
 static long mpu6050_ioctl(struct file* filp, unsigned int cmd, unsigned long arg){
-	Debug();
+	int ret = 0;
+	unsigned int x = 0;
+	Debug_printk("Enter mpu6050_ioctl!\n");
 	if(MAGIC_TYPE != _IOC_TYPE(cmd)){
 		Debug_err();
 		return -EINVAL;
 	}else{}
-	switch(_IOC_NR(cmd)){
-		case 'X':{
-			arg = 0;
-			arg = read_reg_mpu6050(client, GYRO_XOUT_H) << 8;
-			arg |= read_reg_mpu6050(client, GYRO_XOUT_L) << 8;
-			break;
-		}
-		case 'Y':{
-			
-			break;
-		}
-		case 'Z':{
-			
-			break;
-		}
-		default:{
-			
-			break;
-		}
+	//switch(_IOC_NR(cmd)){
+	switch(cmd){
+	case GET_ALL:{
+				 Debug();
+				 data.gyro.x = read_reg_mpu6050(global_client, GYRO_XOUT_H) << 8;
+				 x = read_reg_mpu6050(global_client, GYRO_XOUT_H) << 8;
+				 x |= read_reg_mpu6050(global_client, GYRO_XOUT_L);
+				 printk(KERN_EMERG "x:%u\n", x);
+				 data.gyro.x |= read_reg_mpu6050(global_client, GYRO_XOUT_L);
+				 data.gyro.y = read_reg_mpu6050(global_client, GYRO_YOUT_H) << 8;
+				 data.gyro.y |= read_reg_mpu6050(global_client, GYRO_YOUT_L);
+				 data.gyro.z = read_reg_mpu6050(global_client, GYRO_ZOUT_H) << 8;
+				 data.gyro.z |= read_reg_mpu6050(global_client, GYRO_ZOUT_L);
+
+				 data.accel.x = read_reg_mpu6050(global_client, ACCEL_XOUT_H) << 8;
+				 data.accel.x |= read_reg_mpu6050(global_client, ACCEL_XOUT_L);
+				 data.accel.y = read_reg_mpu6050(global_client, ACCEL_YOUT_H) << 8;
+				 data.accel.y |= read_reg_mpu6050(global_client, ACCEL_YOUT_L);
+				 data.accel.z = read_reg_mpu6050(global_client, ACCEL_ZOUT_H) << 8;
+				 data.accel.z |= read_reg_mpu6050(global_client, ACCEL_ZOUT_L);
+				 Debug();
+				 break;
+			 }
+	case 'Y':{
+
+				 break;
+			 }
+	case 'Z':{
+
+				 break;
+			 }
+	default:{
+
+				break;
+			}
 
 	}
-
+	Debug();
+	if(0 > (ret = copy_to_user((void*)arg, &data, sizeof(mpu6050_msg_t)))){
+		Debug();
+		return -ENOMSG;
+	}
+	Debug();
 	return 0;
 }
 
@@ -118,7 +142,7 @@ static const struct file_operations mpu6050_fops={
 
 /* Standard driver model interfaces */
 static int mpu6050_i2c_probe(struct i2c_client* clientp, const struct i2c_device_id* idp){
-	Debug();
+	Debug_printk("Enter probe!\n");
 	misc = kzalloc(sizeof(struct miscdevice), GFP_KERNEL);
 	if(!misc){
 		Debug_err();
@@ -132,11 +156,11 @@ static int mpu6050_i2c_probe(struct i2c_client* clientp, const struct i2c_device
 		Debug_err();
 		goto err_misc_register;
 	}else{
-		client = clientp;
+		global_client = clientp;
 	}
 
-	mpu6050_init(clientp);
-
+	mpu6050_init(global_client);
+	Debug_printk("Probe DONE!\n");
 	return 0;
 	
 err_misc_register:
@@ -145,22 +169,24 @@ err_kzalloc:
 	return 0;
 }
 int mpu6050_i2c_remove(struct i2c_client * clientp){
-	Debug();
 	
 	misc_deregister(misc);
 	kfree(misc);
+	Debug_printk("mpu6050_i2c_remove done!\n");
 
 	return 0;
 }
 
 static const struct of_device_id mpu6050_dt_ids[] = {
-	{ .compatible = "xyz,mpu6050", },
-	{ }
+	{ .compatible = "invensense,mpu6050", },
+	{},
 };
+/*
 static const struct i2c_device_id mpu6050_i2c_id[] = {
-	{ "mpu6050-exynos4412", 0 },
-	{ }
+	{ "invensense,mpu6050", 0 },
+	{},
 };
+*/
 static struct i2c_driver mpu6050_i2c_driver = {
 	.driver = {
 		.name	= "mpu6050",
@@ -169,7 +195,7 @@ static struct i2c_driver mpu6050_i2c_driver = {
 	},
 	.probe		= mpu6050_i2c_probe,
 	.remove		= mpu6050_i2c_remove,
-	.id_table	= mpu6050_i2c_id,
+//	.id_table	= mpu6050_i2c_id,
 };
 module_i2c_driver(mpu6050_i2c_driver);
 
